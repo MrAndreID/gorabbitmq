@@ -1,0 +1,4 @@
+github.com/MrAndreID/gohelpers v1.2.2 h1:Vmmw43Uu0GUoZ5N0cVd/eHItWkmXvp0VBz5oonoFlGI=
+github.com/MrAndreID/gohelpers v1.2.2/go.mod h1:pW+A5y9msgZd3oHvAZ6i28f6NgDnmYYKDKCks9HwlLU=
+github.com/streadway/amqp v1.0.0 h1:kuuDrUJFZL1QYL9hUNuCxNObNzB0bV/ZG5jV3RWAQgo=
+github.com/streadway/amqp v1.0.0/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=

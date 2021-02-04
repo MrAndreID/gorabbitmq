@@ -147,7 +147,7 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 			}
 		}
 
-		flag <- "successfully to get a response from rabbitmq."
+		flag <- "Message => successfully to get a response from rabbitmq."
 	}()
 
 	select {

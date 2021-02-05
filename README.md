@@ -31,7 +31,7 @@ go get -u github.com/MrAndreID/gorabbitmq
 ### RPC Client
 
 ```go
-import github.com/MrAndreID/gohelpers
+import "github.com/MrAndreID/gohelpers"
 
 result, err := gorabbitmq.RPCClient("Andrea Adam", gorabbitmq.Connection{"127.0.0.1", "5672", "account", "account", "account"}, gorabbitmq.QueueSetting{"account", true, false, false, false, nil}, gorabbitmq.ConsumeSetting{"", true, false, false, false, nil}, gorabbitmq.OtherSetting{"account", "60000", false, false, 18})
 

@@ -42,6 +42,14 @@ if err != nil {
 }
 ```
 
+### RPC Server
+
+```go
+import "services/routes"
+
+gorabbitmq.RPCServer(gorabbitmq.Connection{"127.0.0.1", "5672", "account", "account", "account"}, gorabbitmq.QueueSetting{"account", true, false, false, false, nil}, gorabbitmq.QosSetting{1, 0, false}, gorabbitmq.ConsumeSetting{"", false, false, false, false, nil}, gorabbitmq.OtherSetting{"account", "60000", false, false, 18}, routes.HandleRequest)
+```
+
 ## Versioning
 
 I use [SemVer](https://semver.org/) for versioning. For the versions available, see the tags on this repository. 

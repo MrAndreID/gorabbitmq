@@ -20,6 +20,11 @@ type QueueSetting struct {
 	Args map[string]interface{}
 }
 
+type QosSetting struct {
+	PrefetchCount, PrefetchSize int
+	Global bool
+}
+
 type ConsumeSetting struct {
 	Consumer string
 	AutoAck, Exclusive, NoLocal, NoWait bool
@@ -31,6 +36,8 @@ type OtherSetting struct {
 	Mandatory, Immediate bool
 	Timeout time.Duration
 }
+
+type RouteFunc func(string) string
 
 func RPCClient(body string, connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting) (response string, errorResponse error) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
@@ -167,4 +174,98 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 	
 		return
 	}
+}
+
+func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting, routeFunc RouteFunc) {
+	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
+
+	log.Println("[AMQP - RPC Server] " + url + " [" + queueSetting.Name + "]")
+
+	dial, err := amqp.Dial("amqp://" + connection.Username + ":" + connection.Password + "@" + url)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to connect rabbitmq", err)
+	} else {
+		log.Println("Message => successfully connected rabbitmq.")
+	}
+	defer dial.Close()
+
+	channel, err := dial.Channel()
+	if err != nil {
+		gohelpers.ErrorMessage("failed to open a channel in rabbitmq", err)
+	} else {
+		log.Println("Message => successfully to opened a channel in rabbitmq.")
+	}
+	defer channel.Close()
+
+	queue, err := channel.QueueDeclare(
+		queueSetting.Name,
+		queueSetting.Durable,
+		queueSetting.AutoDelete,
+		queueSetting.Exclusive,
+		queueSetting.NoWait,
+		queueSetting.Args,
+	)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to declare a queue in rabbitmq", err)
+	} else {
+		log.Println("Message => successfully to declare a queue in rabbitmq.")
+	}
+
+	err = channel.Qos(
+		qosSetting.PrefetchCount,
+		qosSetting.PrefetchSize,
+		qosSetting.Global,
+	)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to set qos in rabbitmq", err)
+	} else {
+		log.Println("Message => successfully to set qos in rabbitmq.")
+	}
+
+	message, err := channel.Consume(
+		queue.Name,
+		consumeSetting.Consumer,
+		consumeSetting.AutoAck,
+		consumeSetting.Exclusive,
+		consumeSetting.NoLocal,
+		consumeSetting.NoWait,
+		consumeSetting.Args,
+	)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to register a consumer in rabbitmq", err)
+	} else {
+		log.Println("Message => successfully to register a consumer in rabbitmq.")
+	}
+
+	forever := make(chan bool)
+
+	go func() {
+		for data := range message {
+			response := routeFunc(string(data.Body))
+
+			err = channel.Publish(
+				"",
+				otherSetting.RoutingKey,
+				otherSetting.Mandatory,
+				otherSetting.Immediate,
+				amqp.Publishing{
+					ContentType: "text/plain",
+					CorrelationId: data.CorrelationId,
+					Body: []byte(response),
+					Expiration: otherSetting.Expiration,
+				},
+			)
+			if err != nil {
+				gohelpers.ErrorMessage("failed to publish a message to rabbitmq", err)
+			} else {
+				log.Println("Message => successfully to publish a message to rabbitmq.")
+
+				fmt.Println()
+			}
+
+			data.Ack(false)
+		}
+	}()
+
+	<-forever
 }

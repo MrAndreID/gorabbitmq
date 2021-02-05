@@ -35,7 +35,7 @@ type OtherSetting struct {
 func RPCClient(body string, connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting) (response string, errorResponse error) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
 
-	log.Println("[AMQP] " + url + " [" + queueSetting.Name + "]")
+	log.Println("[AMQP - RPC Client] " + url + " [" + queueSetting.Name + "]")
 
 	dial, err := amqp.Dial("amqp://" + connection.Username + ":" + connection.Password + "@" + url)
 	if err != nil {

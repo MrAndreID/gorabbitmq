@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 	"errors"
+	"sync/atomic"
 
 	"github.com/streadway/amqp"
 	"github.com/MrAndreID/gohelpers"
@@ -38,6 +39,15 @@ type OtherSetting struct {
 }
 
 type RouteFunc func(string) string
+
+type AMQPConnection struct {
+	*amqp.Connection
+}
+
+type AMQPChannel struct {
+	*amqp.Channel
+	closed int32
+}
 
 func RPCClient(body string, connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting) (response string, errorResponse error) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
@@ -181,9 +191,9 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 
 	log.Println("[AMQP - RPC Server] " + url + " [" + queueSetting.Name + "]")
 
-	dial, err := amqp.Dial("amqp://" + connection.Username + ":" + connection.Password + "@" + url)
+	dial, err := Dial("amqp://" + connection.Username + ":" + connection.Password + "@" + url)
 	if err != nil {
-		gohelpers.ErrorMessage("failed to connect rabbitmq", err)
+		gohelpers.ErrorMessage("failed to connect rabbitmq [Main]", err)
 	} else {
 		log.Println("Message => successfully connected rabbitmq.")
 	}
@@ -191,7 +201,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 
 	channel, err := dial.Channel()
 	if err != nil {
-		gohelpers.ErrorMessage("failed to open a channel in rabbitmq", err)
+		gohelpers.ErrorMessage("failed to open a channel in rabbitmq [Main]", err)
 	} else {
 		log.Println("Message => successfully to opened a channel in rabbitmq.")
 	}
@@ -206,7 +216,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 		queueSetting.Args,
 	)
 	if err != nil {
-		gohelpers.ErrorMessage("failed to declare a queue in rabbitmq", err)
+		gohelpers.ErrorMessage("failed to declare a queue in rabbitmq [Main]", err)
 	} else {
 		log.Println("Message => successfully to declare a queue in rabbitmq.")
 	}
@@ -217,7 +227,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 		qosSetting.Global,
 	)
 	if err != nil {
-		gohelpers.ErrorMessage("failed to set qos in rabbitmq", err)
+		gohelpers.ErrorMessage("failed to set qos in rabbitmq [Main]", err)
 	} else {
 		log.Println("Message => successfully to set qos in rabbitmq.")
 	}
@@ -232,7 +242,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 		consumeSetting.Args,
 	)
 	if err != nil {
-		gohelpers.ErrorMessage("failed to register a consumer in rabbitmq", err)
+		gohelpers.ErrorMessage("failed to register a consumer in rabbitmq [Main]", err)
 	} else {
 		log.Println("Message => successfully to register a consumer in rabbitmq.")
 	}
@@ -256,7 +266,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 				},
 			)
 			if err != nil {
-				gohelpers.ErrorMessage("failed to publish a message to rabbitmq", err)
+				gohelpers.ErrorMessage("failed to publish a message to rabbitmq [Main]", err)
 			} else {
 				log.Println("Message => successfully to publish a message to rabbitmq.")
 
@@ -268,4 +278,131 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 	}()
 
 	<-forever
+}
+
+func Dial(url string) (*AMQPConnection, error) {
+	dial, err := amqp.Dial(url)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to connect rabbitmq", err)
+
+		return nil, err
+	}
+
+	connection := &AMQPConnection{
+		Connection: dial,
+	}
+
+	go func() {
+		for {
+			reason, ok := <-connection.Connection.NotifyClose(make(chan *amqp.Error))
+			if !ok {
+				gohelpers.ErrorMessage("connection closed", reason)
+
+				break
+			}
+
+			for {
+				time.Sleep(2 * time.Second)
+
+				dial, err := amqp.Dial(url)
+				if err != nil {
+					gohelpers.ErrorMessage("failed to reconnect rabbitmq", err)
+				} else {
+					connection.Connection = dial
+
+					log.Println("Message => successfully reconnected rabbitmq.")
+
+					break
+				}
+			}
+		}
+	}()
+
+	return connection, nil
+}
+
+func (connection *AMQPConnection) Channel() (*AMQPChannel, error) {
+	connectionChannel, err := connection.Connection.Channel()
+	if err != nil {
+		gohelpers.ErrorMessage("failed to open a channel in rabbitmq", err)
+
+		return nil, err
+	}
+
+	channel := &AMQPChannel{
+		Channel: connectionChannel,
+	}
+
+	go func() {
+		for {
+			reason, ok := <-channel.Channel.NotifyClose(make(chan *amqp.Error))
+			if !ok || channel.IsClosed() {
+				gohelpers.ErrorMessage("channel closed", reason)
+
+				channel.Close()
+
+				break
+			}
+
+			for {
+				time.Sleep(2 * time.Second)
+
+				connectionChannel, err := connection.Connection.Channel()
+				if err != nil {
+					gohelpers.ErrorMessage("failed to recreate rabbitmq channel", err)
+				} else {
+					channel.Channel = connectionChannel
+
+					log.Println("Message => successfully recreated rabbitmq channel.")
+
+					break
+				}
+			}
+		}
+	}()
+
+	return channel, nil
+}
+
+func (channel *AMQPChannel) Close() error {
+	if channel.IsClosed() {
+		return amqp.ErrClosed
+	}
+
+	atomic.StoreInt32(&channel.closed, 1)
+
+	return channel.Channel.Close()
+}
+
+func (channel *AMQPChannel) IsClosed() bool {
+	return (atomic.LoadInt32(&channel.closed) == 1)
+}
+
+func (channel *AMQPChannel) Consume(queue, consumer string, autoAck, exclusive, noLocal, noWait bool, args amqp.Table) (<-chan amqp.Delivery, error) {
+	deliveries := make(chan amqp.Delivery)
+
+	go func() {
+		for {
+			data, err := channel.Channel.Consume(queue, consumer, autoAck, exclusive, noLocal, noWait, args)
+			if err != nil {
+				gohelpers.ErrorMessage("failed to register a consumer in rabbitmq", err)
+
+				time.Sleep(2 * time.Second)
+
+				continue
+			}
+
+			for message := range data {
+				deliveries <- message
+			}
+
+			time.Sleep(2 * time.Second)
+
+			if channel.IsClosed() {
+				break
+			}
+		}
+	}()
+
+	return deliveries, nil
 }

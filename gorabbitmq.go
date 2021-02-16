@@ -250,7 +250,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 
 			err = channel.Publish(
 				"",
-				otherSetting.RoutingKey,
+				data.ReplyTo,
 				otherSetting.Mandatory,
 				otherSetting.Immediate,
 				amqp.Publishing{

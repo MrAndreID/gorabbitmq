@@ -1,13 +1,12 @@
 package gorabbitmq
 
 import (
-	"log"
-	"fmt"
 	"time"
 	"errors"
 	"sync/atomic"
 
 	"github.com/streadway/amqp"
+	"github.com/MrAndreID/golog"
 	"github.com/MrAndreID/gohelpers"
 )
 
@@ -52,7 +51,7 @@ type AMQPChannel struct {
 func RPCClient(body string, connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting) (response string, errorResponse error) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
 
-	log.Println("[AMQP - RPC Client] " + url + " [" + queueSetting.Name + "]")
+	golog.Info("[AMQP - RPC Client] " + url + " [" + queueSetting.Name + "]")
 
 	dial, err := amqp.Dial("amqp://" + connection.Username + ":" + connection.Password + "@" + url)
 	if err != nil {
@@ -63,7 +62,7 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 
 		return
 	} else {
-		log.Println("Message => successfully connected rabbitmq.")
+		golog.Success("-> Successfully connected rabbitmq.")
 	}
 	defer dial.Close()
 
@@ -76,7 +75,7 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 
 		return
 	} else {
-		log.Println("Message => successfully to opened a channel in rabbitmq.")
+		golog.Success("-> Successfully to opened a channel in rabbitmq.")
 	}
 	defer channel.Close()
 
@@ -96,7 +95,7 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 
 		return
 	} else {
-		log.Println("Message => successfully to declare a queue in rabbitmq.")
+		golog.Success("-> Successfully to declare a queue in rabbitmq.")
 	}
 
 	message, err := channel.Consume(
@@ -116,7 +115,7 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 
 		return
 	} else {
-		log.Println("Message => successfully to register a consumer in rabbitmq.")
+		golog.Success("-> Successfully to register a consumer in rabbitmq.")
 	}
 
 	corrId := gohelpers.Random("str", 32)
@@ -142,7 +141,7 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 
 		return
 	} else {
-		log.Println("Message => successfully to publish a message to rabbitmq.")
+		golog.Success("-> Successfully to publish a message to rabbitmq.")
 	}
 
 	flag := make(chan string, 1)
@@ -164,14 +163,12 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 			}
 		}
 
-		flag <- "Message => successfully to get a response from rabbitmq."
+		flag <- "-> Successfully to get a response from rabbitmq."
 	}()
 
 	select {
 	case result := <-flag:
-		log.Println(result)
-
-		fmt.Println()
+		golog.Success(result)
 	
 		return
 	case <-time.After(otherSetting.Timeout * time.Second):
@@ -179,8 +176,6 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 
 		response = ""
 		errorResponse = errors.New("rpc server responds too long.")
-
-		fmt.Println()
 	
 		return
 	}
@@ -189,13 +184,13 @@ func RPCClient(body string, connection Connection, queueSetting QueueSetting, co
 func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting, routeFunc RouteFunc) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
 
-	log.Println("[AMQP - RPC Server] " + url + " [" + queueSetting.Name + "]")
+	golog.Info("[AMQP - RPC Server] " + url + " [" + queueSetting.Name + "]")
 
 	dial, err := Dial("amqp://" + connection.Username + ":" + connection.Password + "@" + url)
 	if err != nil {
 		gohelpers.ErrorMessage("failed to connect rabbitmq [Main]", err)
 	} else {
-		log.Println("Message => successfully connected rabbitmq.")
+		golog.Success("-> Successfully connected rabbitmq.")
 	}
 	defer dial.Close()
 
@@ -203,7 +198,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 	if err != nil {
 		gohelpers.ErrorMessage("failed to open a channel in rabbitmq [Main]", err)
 	} else {
-		log.Println("Message => successfully to opened a channel in rabbitmq.")
+		golog.Success("-> Successfully to opened a channel in rabbitmq.")
 	}
 	defer channel.Close()
 
@@ -218,7 +213,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 	if err != nil {
 		gohelpers.ErrorMessage("failed to declare a queue in rabbitmq [Main]", err)
 	} else {
-		log.Println("Message => successfully to declare a queue in rabbitmq.")
+		golog.Success("-> Successfully to declare a queue in rabbitmq.")
 	}
 
 	err = channel.Qos(
@@ -229,7 +224,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 	if err != nil {
 		gohelpers.ErrorMessage("failed to set qos in rabbitmq [Main]", err)
 	} else {
-		log.Println("Message => successfully to set qos in rabbitmq.")
+		golog.Success("-> Successfully to set qos in rabbitmq.")
 	}
 
 	message, err := channel.Consume(
@@ -244,7 +239,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 	if err != nil {
 		gohelpers.ErrorMessage("failed to register a consumer in rabbitmq [Main]", err)
 	} else {
-		log.Println("Message => successfully to register a consumer in rabbitmq.")
+		golog.Success("-> Successfully to register a consumer in rabbitmq.")
 	}
 
 	forever := make(chan bool)
@@ -268,9 +263,7 @@ func RPCServer(connection Connection, queueSetting QueueSetting, qosSetting QosS
 			if err != nil {
 				gohelpers.ErrorMessage("failed to publish a message to rabbitmq [Main]", err)
 			} else {
-				log.Println("Message => successfully to publish a message to rabbitmq.")
-
-				fmt.Println()
+				golog.Success("-> Successfully to publish a message to rabbitmq.")
 			}
 
 			data.Ack(false)
@@ -310,7 +303,7 @@ func Dial(url string) (*AMQPConnection, error) {
 				} else {
 					connection.Connection = dial
 
-					log.Println("Message => successfully reconnected rabbitmq.")
+					golog.Success("Successfully reconnected rabbitmq.")
 
 					break
 				}
@@ -353,7 +346,7 @@ func (connection *AMQPConnection) Channel() (*AMQPChannel, error) {
 				} else {
 					channel.Channel = connectionChannel
 
-					log.Println("Message => successfully recreated rabbitmq channel.")
+					golog.Success("-> Successfully recreated rabbitmq channel.")
 
 					break
 				}

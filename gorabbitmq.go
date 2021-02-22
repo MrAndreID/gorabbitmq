@@ -48,7 +48,7 @@ type AMQPChannel struct {
 	closed int32
 }
 
-func Client(body string, connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting) (errorResponse error) {
+func Client(body string, connection Connection, queueSetting QueueSetting, otherSetting OtherSetting) (errorResponse error) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
 
 	golog.Info("[AMQP - Client] " + url + " [" + queueSetting.Name + "]")

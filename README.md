@@ -33,7 +33,7 @@ go get -u github.com/MrAndreID/gorabbitmq
 ```go
 import "github.com/MrAndreID/gohelpers"
 
-err := gorabbitmq.Client("Andrea Adam", gorabbitmq.Connection{"127.0.0.1", "5672", "account", "account", "account"}, gorabbitmq.QueueSetting{"account", true, false, false, false, nil}, gorabbitmq.ConsumeSetting{"", true, false, false, false, nil}, gorabbitmq.OtherSetting{"account", "60000", false, false, 18})
+err := gorabbitmq.Client("Andrea Adam", gorabbitmq.Connection{"127.0.0.1", "5672", "account", "account", "account"}, gorabbitmq.QueueSetting{"account", true, false, false, false, nil}, gorabbitmq.OtherSetting{"account", "60000", false, false, 18})
 
 if err != nil {
     gohelpers.HandleResponse(response, 400, "looks like something went wrong", err)

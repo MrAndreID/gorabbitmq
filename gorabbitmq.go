@@ -48,6 +48,79 @@ type AMQPChannel struct {
 	closed int32
 }
 
+func Client(body string, connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting) (errorResponse error) {
+	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
+
+	golog.Info("[AMQP - Client] " + url + " [" + queueSetting.Name + "]")
+
+	dial, err := amqp.Dial("amqp://" + connection.Username + ":" + connection.Password + "@" + url)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to connect rabbitmq", err)
+
+		errorResponse = err
+
+		return
+	} else {
+		golog.Success("Successfully connected rabbitmq.")
+	}
+	defer dial.Close()
+
+	channel, err := dial.Channel()
+	if err != nil {
+		gohelpers.ErrorMessage("failed to open a channel in rabbitmq", err)
+
+		errorResponse = err
+
+		return
+	} else {
+		golog.Success("Successfully to opened a channel in rabbitmq.")
+	}
+	defer channel.Close()
+
+	queue, err := channel.QueueDeclare(
+		queueSetting.Name,
+		queueSetting.Durable,
+		queueSetting.AutoDelete,
+		queueSetting.Exclusive,
+		queueSetting.NoWait,
+		queueSetting.Args,
+	)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to declare a queue in rabbitmq", err)
+
+		errorResponse = err
+
+		return
+	} else {
+		golog.Success("Successfully to declare a queue in rabbitmq.")
+	}
+
+	err = channel.Publish(
+		"",
+		queue.Name,
+		otherSetting.Mandatory,
+		otherSetting.Immediate,
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body: []byte(body),
+			Expiration: otherSetting.Expiration,
+		},
+	)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to publish a message to rabbitmq", err)
+
+		errorResponse = err
+
+		return
+	} else {
+		golog.Success("Successfully to publish a message to rabbitmq.")
+
+		errorResponse = nil
+
+		return
+	}
+}
+
 func RPCClient(body string, connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting) (response string, errorResponse error) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
 

@@ -42,6 +42,14 @@ if err != nil {
 }
 ```
 
+### Server
+
+```go
+import "services/routes"
+
+gorabbitmq.Server(gorabbitmq.Connection{"127.0.0.1", "5672", "account", "account", "account"}, gorabbitmq.QueueSetting{"account", true, false, false, false, nil}, gorabbitmq.ConsumeSetting{"", false, false, false, false, nil}, gorabbitmq.OtherSetting{"account", "60000", false, false, 18}, routes.HandleRequest)
+```
+
 ### RPC Client
 
 ```go

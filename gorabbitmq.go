@@ -121,6 +121,69 @@ func Client(body string, connection Connection, queueSetting QueueSetting, other
 	}
 }
 
+func Server(connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, routeFunc RouteFunc) {
+	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
+
+	golog.Info("[AMQP - Server] " + url + " [" + queueSetting.Name + "]")
+
+	dial, err := Dial("amqp://" + connection.Username + ":" + connection.Password + "@" + url)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to connect rabbitmq [Main]", err)
+	} else {
+		golog.Success("Successfully connected rabbitmq.")
+	}
+	defer dial.Close()
+
+	channel, err := dial.Channel()
+	if err != nil {
+		gohelpers.ErrorMessage("failed to open a channel in rabbitmq [Main]", err)
+	} else {
+		golog.Success("Successfully to opened a channel in rabbitmq.")
+	}
+	defer channel.Close()
+
+	queue, err := channel.QueueDeclare(
+		queueSetting.Name,
+		queueSetting.Durable,
+		queueSetting.AutoDelete,
+		queueSetting.Exclusive,
+		queueSetting.NoWait,
+		queueSetting.Args,
+	)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to declare a queue in rabbitmq [Main]", err)
+	} else {
+		golog.Success("Successfully to declare a queue in rabbitmq.")
+	}
+
+	message, err := channel.Consume(
+		queue.Name,
+		consumeSetting.Consumer,
+		consumeSetting.AutoAck,
+		consumeSetting.Exclusive,
+		consumeSetting.NoLocal,
+		consumeSetting.NoWait,
+		consumeSetting.Args,
+	)
+	if err != nil {
+		gohelpers.ErrorMessage("failed to register a consumer in rabbitmq [Main]", err)
+	} else {
+		golog.Success("Successfully to register a consumer in rabbitmq.")
+	}
+
+	forever := make(chan bool)
+
+	go func() {
+		for data := range message {
+			golog.Success("Successfully to consume a message to rabbitmq.")
+
+			routeFunc(string(data.Body))
+		}
+	}()
+
+	<-forever
+}
+
 func RPCClient(body string, connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, otherSetting OtherSetting) (response string, errorResponse error) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
 

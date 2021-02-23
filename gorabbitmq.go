@@ -48,6 +48,8 @@ type AMQPChannel struct {
 	closed int32
 }
 
+type ActionFunc func(string)
+
 func Client(body string, connection Connection, queueSetting QueueSetting, otherSetting OtherSetting) (errorResponse error) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
 
@@ -121,7 +123,7 @@ func Client(body string, connection Connection, queueSetting QueueSetting, other
 	}
 }
 
-func Server(connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, routeFunc RouteFunc) {
+func Server(connection Connection, queueSetting QueueSetting, consumeSetting ConsumeSetting, actionFunc ActionFunc) {
 	url := connection.Host + ":" + connection.Port + "/" + connection.VirtualHost
 
 	golog.Info("[AMQP - Server] " + url + " [" + queueSetting.Name + "]")
@@ -177,7 +179,7 @@ func Server(connection Connection, queueSetting QueueSetting, consumeSetting Con
 		for data := range message {
 			golog.Success("Successfully to consume a message to rabbitmq.")
 
-			routeFunc(string(data.Body))
+			actionFunc(string(data.Body))
 		}
 	}()
 

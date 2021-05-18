@@ -1,8 +1,6 @@
-github.com/MrAndreID/gohelpers v1.2.2 h1:Vmmw43Uu0GUoZ5N0cVd/eHItWkmXvp0VBz5oonoFlGI=
-github.com/MrAndreID/gohelpers v1.2.2/go.mod h1:pW+A5y9msgZd3oHvAZ6i28f6NgDnmYYKDKCks9HwlLU=
-github.com/MrAndreID/gohelpers v1.4.1 h1:UNRwHmnyZE4Xx+1z9v6Lqc7yu/VkzNnaepR1Hk3OVZo=
-github.com/MrAndreID/gohelpers v1.4.1/go.mod h1:pW+A5y9msgZd3oHvAZ6i28f6NgDnmYYKDKCks9HwlLU=
-github.com/MrAndreID/golog v1.1.3 h1:reBdJaxC82/f8FwUXshNJHaWOrohg9+SGTZbpCMXTQA=
-github.com/MrAndreID/golog v1.1.3/go.mod h1:R8h/EjNn7QnF1ML9quZw9TMU896ae5nZx6e01Jqyx70=
+github.com/MrAndreID/gohelpers v1.4.4 h1:pjM8vfIRT7v3EmFcpYQMGOFMxjMzO6TnqhVpSimrZd8=
+github.com/MrAndreID/gohelpers v1.4.4/go.mod h1:U4ApuIT/BLwUSaVVLiwv9Uq9mqhG4qtK4fdkHHXTwDo=
+github.com/MrAndreID/golog v1.1.6 h1:cpGD9uk+wvIPfi7EJElFk4nTIQH8Hwy7KD8KivFem4k=
+github.com/MrAndreID/golog v1.1.6/go.mod h1:yRBurH+Af1kxWJDFBHJc3tZ7CwspUQ4xby+mKfT8rTc=
 github.com/streadway/amqp v1.0.0 h1:kuuDrUJFZL1QYL9hUNuCxNObNzB0bV/ZG5jV3RWAQgo=
 github.com/streadway/amqp v1.0.0/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=

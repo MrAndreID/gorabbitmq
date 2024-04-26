@@ -2,5 +2,5 @@ github.com/MrAndreID/gohelpers v1.4.4 h1:pjM8vfIRT7v3EmFcpYQMGOFMxjMzO6TnqhVpSim
 github.com/MrAndreID/gohelpers v1.4.4/go.mod h1:U4ApuIT/BLwUSaVVLiwv9Uq9mqhG4qtK4fdkHHXTwDo=
 github.com/MrAndreID/golog v1.1.6 h1:cpGD9uk+wvIPfi7EJElFk4nTIQH8Hwy7KD8KivFem4k=
 github.com/MrAndreID/golog v1.1.6/go.mod h1:yRBurH+Af1kxWJDFBHJc3tZ7CwspUQ4xby+mKfT8rTc=
-github.com/streadway/amqp v1.0.0 h1:kuuDrUJFZL1QYL9hUNuCxNObNzB0bV/ZG5jV3RWAQgo=
-github.com/streadway/amqp v1.0.0/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
+github.com/streadway/amqp v1.1.0 h1:py12iX8XSyI7aN/3dUT8DFIDJazNJsVJdxNVEpnQTZM=
+github.com/streadway/amqp v1.1.0/go.mod h1:WYSrTEYHOXHd0nwFeUXAe2G2hRnQT+deZJJf88uS9Bg=
